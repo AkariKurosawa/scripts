@@ -1,0 +1,108 @@
+library("DESeq2")
+library("ggplot2")
+library("ggrepel")
+library("pheatmap")
+library("tximport")
+
+
+###edit area start###
+colData<-""     #edit DESeq2 colData here(remember to relevel!)
+colData<-read.csv("H:/work/main/bioinfo/projects/lnc12_220215/col.csv",stringsAsFactors=F)
+colData[,2]<-factor(colData[,2])
+colData[,2]<-relevel(colData[,2],"siCtrl")
+countData<-""    #edit DESeq2 countData here(leave it blank if use tximport)
+#rownames(countData)<-countData[,1]
+#countData<-countData[,-1]
+txi<-""    #load tximport object here(leave it blank if import use count table directly)
+load("H:/work/main/bioinfo/projects/lnc12_220215/txi_2.rda")
+txi<-txi.kallisto
+
+design<-""  #edit DESeq2 design formula here(string)
+design<-"~condition"
+contrasts<-list(c("","",""))    #set results to extract(in contrast form), add multiple contasts to extract multiple results and leave it blank if default result is needed
+FC_threshold <- 1 # threshold of abs(log2FC)
+pvalue_adjust <- F
+pvalue_threshold <- 0.01
+PCA<-T   #output PCA plot or not (bool)
+heatmap<-T   #output heatmap or not (bool)
+volcano<-T   #output volcano plot or not (bool)
+output_path<-"./r_output"    #path to export results
+output_prefix<-"test3"
+
+###edit area end###
+
+if(class(countData)!="data.frame" & class(txi)!="list")
+{
+	print("please import count table or tximport object")
+	q()
+}
+
+if(class(txi)=="list")
+{
+dds<-DESeqDataSetFromTximport(txi=txi, colData=colData, design=as.formula(design))
+	}else{
+dds<-DESeqDataSetFromMatrix(countData=countData, colData=colData, design=as.formula(design))
+  	}
+
+if (PCA) {
+dds<-estimateSizeFactors(dds)
+vsd_dds<-vst(dds,blind=TRUE)
+pcadata <- plotPCA(vsd_dds,intgroup=names(colData)[-1],ntop=100,returnData=TRUE)
+percentVar <- round(100*attr(pcadata,"percentVar"),1)
+png(file.path(output_path,paste0(output_prefix,"_","PCA_plot.png")))
+p<-ggplot(pcadata, aes(PC1, PC2)) + 
+  geom_point(size=3) +
+  xlab(paste0("PC1: ",percentVar[1],"% variance")) +
+  ylab(paste0("PC2: ",percentVar[2],"% variance")) +
+  geom_text_repel(aes(PC1, PC2,label=colnames(vsd_dds)),size=3) +theme_bw()
+ print(p)
+dev.off()
+  }
+
+dds <- DESeq(dds)
+if (length(contrasts)==1 &contrasts[[1]]==""){res_lst<-list(results(dds))
+}else
+ {res_lst<-lapply(contrasts,function(x) results(dds,contrast=x))}
+res_lst<-lapply(res_lst,function(r) r[order(r$pvalue),])
+res_lst<-lapply(res_lst,function(r) merge(as.data.frame(r), as.data.frame(counts(dds, normalized=TRUE)),by="row.names",sort=FALSE) )
+
+filenames_result<-sapply(contrasts,function(x) paste0(output_prefix,"_res_",x[2],"_vs_",x[3],".csv"))
+filenames_heatmap<-sapply(contrasts,function(x) paste0(output_prefix,"_",x[2],"_vs_",x[3],"_heatmap.png"))
+filenames_volcano_plot<-sapply(contrasts,function(x) paste0(output_prefix,"_",x[2],"_vs_",x[3],"_volcanoPlot.png"))
+
+
+for (i in 1:length(res_lst))
+{
+  write.csv(res_lst[[i]],file=file.path(output_path,filenames_result[i]),row.names = F,quote=F)
+  if (heatmap){
+    if(pvalue_adjust){ df <- res_lst[[i]][res_lst[[i]]$padj <= pvalue_threshold & abs(x = res_lst[[i]]$log2FoldChange) >=FC_threshold,- (2:7)]        
+    }else{
+      df <- res_lst[[i]][res_lst[[i]]$pvalue <= pvalue_threshold & abs(x = res_lst[[i]]$log2FoldChange) >=FC_threshold,- (2:7)] }
+  df<-na.omit(df)
+  rownames(df)<-df[,1]
+  df<-df[,-1]
+  annotation_col<-as.data.frame(colData[,-1])
+  rownames(annotation_col)<-colData[,1]
+  if (ncol(annotation_col)==1) {colnames(annotation_col)<-colnames(colData)[2]}
+  pheatmap(df,scale = "row",annotation_col = annotation_col,show_rownames=F,file=file.path(output_path,filenames_heatmap[i]))
+  }
+
+if (volcano){
+if(pvalue_adjust){significant<-as.logical(res_lst[[i]]$padj <= pvalue_threshold & abs(res_lst[[i]]$log2FoldChange) >=FC_threshold)
+}else{
+significant<-as.logical(res_lst[[i]]$pvalue <= pvalue_threshold & abs(res_lst[[i]]$log2FoldChange) >=FC_threshold)}
+significant[which(is.na(significant))]<-F
+png(file.path(output_path,filenames_volcano_plot[i]))
+if(pvalue_adjust){p <- ggplot(res_lst[[i]],aes(x=log2FoldChange,y=-1*log10(padj) ))
+}else{
+p<- ggplot(res_lst[[i]],aes(x=log2FoldChange,y=-1*log10(pvalue)) )}
+
+  p<- p+ geom_point(aes(color=significant))+
+  scale_color_manual(values=c("grey","red"))+
+  geom_hline(yintercept=log10(100/pvalue_threshold),linetype=3)+geom_vline(xintercept=c(-FC_threshold,FC_threshold),linetype=3)+
+  geom_text_repel(aes(label=ifelse(significant,res_lst[[i]]$Row.names,NA)),max.overlaps=20,size=3)+
+  theme_bw()
+print(p)
+dev.off()
+  }
+}
