@@ -1,0 +1,186 @@
+library("clusterProfiler")
+library(org.Hs.eg.db)
+
+###edit area start###
+enrich_input<-".csv" #file with vector containing gene names;if in GSEA mode, it needs to be dataframe(1st col:gene name; 2nd col:log2FC) 
+gsea<-ifelse(exists("gsea"),gsea,F) #bool, GSEA mode or not
+kegg<-ifelse(exists("kegg"),kegg,F) #bool
+bp<-ifelse(exists("bp"),bp,T) #bool
+cc<-ifelse(exists("cc"),cc,T) #bool
+mf<-ifelse(exists("mf"),mf,T) #bool
+dot_plot<-ifelse(exists("dot_plot"),dot_plot,T) #bool
+output_path<-ifelse(exists("output_path"),output_path,"")    #path to export results
+output_prefix<-ifelse(exists("output_prefix"),output_prefix,"") 
+
+###edit area end###
+
+if(gsea)
+{
+data<-read.csv(enrich_input)
+FC<-2^data[,2]
+names(FC)<-data[,1]
+FC<-FC[order(FC,decreasing=T)]
+
+tryCatch({
+id1<-bitr(names(FC),fromType = "ENSEMBL",toType =c("ENSEMBL","ENTREZID"), OrgDb = org.Hs.eg.db)
+id2<-bitr(names(FC),fromType = "SYMBOL",toType =c("SYMBOL","ENTREZID"), OrgDb = org.Hs.eg.db)
+df<-data.frame(gene=names(FC),fc=FC)
+df<-merge(df,id1,by.x="gene",by.y="ENSEMBL",sort=FALSE,all.x=T)
+df<-merge(df,id2,by.x="gene",by.y="SYMBOL",sort=FALSE,all.x=T)
+df$id<-ifelse(is.na(df$ENTREZID.y),df$ENTREZID.x,df$ENTREZID.y)
+FC<<-df[order(df$FC,decreasing=T),"fc"]
+names(FC)<<-df$id
+
+},error=function(e){
+tryCatch({
+id1<-bitr(names(FC),fromType = "ENSEMBL",toType =c("ENSEMBL","ENTREZID"), OrgDb = org.Hs.eg.db)
+id1<-id1[!duplicated(id1$ENSEMBL),]
+rownames(id1)<-id1$ENSEMBL
+FC<<-FC[names(FC) %in% id1$ENSEMBL]
+names(FC)<<-id1[names(FC),"ENTREZID"]
+},error=function(e){
+id2<-bitr(names(FC),fromType = "SYMBOL",toType =c("SYMBOL","ENTREZID"),OrgDb = org.Hs.eg.db)
+id2<-id2[!duplicated(id2$SYMBOL),]
+rownames(id2)<-id2$SYMBOL
+FC<<-FC[names(FC) %in% id2$SYMBOL]
+names(FC)<<-id2[names(FC),"ENTREZID"]
+}
+)
+},finally={print(head(FC))
+print(tail(FC))}
+)
+if(dot_plot){pdf(file.path(output_path,paste0(output_prefix,"_dotplot.pdf")))}
+if(kegg){
+ek<- gseKEGG(geneList     = FC,
+             organism     = 'hsa',
+              pvalueCutoff = 0.95,
+              verbose      = FALSE)
+ek<-setReadable(ek,OrgDb = org.Hs.eg.db, keyType="ENTREZID")
+write.csv(ek,file=file.path(output_path,paste0(output_prefix,"_kegg.csv")),row.names = F,quote=F)
+if(dot_plot){
+print(dotplot(ek,title="enrich:KEGG"))
+}
+}
+
+if(bp){
+ego_BP<- gseGO(geneList     = FC,
+            ont="BP",
+	keyType = "ENTREZID",
+             OrgDb        = org.Hs.eg.db,
+              pvalueCutoff = 0.95,
+              verbose      = FALSE)
+ego_BP<-setReadable(ego_BP,OrgDb = org.Hs.eg.db, keyType="ENTREZID")
+write.csv(ego_BP,file=file.path(output_path,paste0(output_prefix,"_gobp.csv")),row.names = F,quote=F)
+if(dot_plot){
+print(dotplot(ego_BP,title="enrich:GO_BP"))
+}
+}
+
+if(cc){
+ego_CC<- gseGO(geneList     = FC,
+            ont="CC",
+	keyType = "ENTREZID",
+             OrgDb        = org.Hs.eg.db,
+              pvalueCutoff = 0.95,
+              verbose      = FALSE)
+ego_CC<-setReadable(ego_CC,OrgDb = org.Hs.eg.db, keyType="ENTREZID")
+write.csv(ego_CC,file=file.path(output_path,paste0(output_prefix,"_gocc.csv")),row.names = F,quote=F)
+if(dot_plot){
+print(dotplot(ego_CC,title="enrich:GO_CC"))
+}
+}
+
+if(mf){
+ego_MF<- gseGO(geneList= FC,
+            ont="MF",
+	keyType = "ENTREZID",
+             OrgDb        = org.Hs.eg.db,
+              pvalueCutoff = 0.95,
+              verbose      = FALSE)
+ego_MF<-setReadable(ego_MF,OrgDb = org.Hs.eg.db, keyType="ENTREZID")
+write.csv(ego_MF,file=file.path(output_path,paste0(output_prefix,"_gomf.csv")),row.names = F,quote=F)
+if(dot_plot){
+print(dotplot(ego_MF,title="enrich:GO_MF"))
+}
+}
+if(dot_plot){dev.off()}
+}else{
+data<-read.csv(enrich_input)    
+gene<-data[,1]
+
+tryCatch({
+id1<-bitr(gene,fromType = "ENSEMBL",toType =c("ENSEMBL","ENTREZID"), OrgDb = org.Hs.eg.db)
+id2<-bitr(gene,fromType = "SYMBOL",toType =c("SYMBOL","ENTREZID"), OrgDb = org.Hs.eg.db)
+gene<<-c(id1[id1$ENTREZID!="","ENTREZID"],id2[id2$ENTREZID!="","ENTREZID"])
+gene<<-gene[!duplicated(gene)]
+
+},error=function(e){
+tryCatch({
+id1<-bitr(gene,fromType = "ENSEMBL",toType =c("ENSEMBL","ENTREZID"), OrgDb = org.Hs.eg.db)
+gene<<-id1$ENTREZID
+
+},error=function(e){
+id2<-bitr(gene,fromType = "SYMBOL",toType =c("SYMBOL","ENTREZID"),OrgDb = org.Hs.eg.db)
+gene<<-id2$ENTREZID
+}
+)
+},finally={print(head(gene))
+print(tail(gene))}
+)
+
+if(dot_plot){pdf(file.path(output_path,paste0(output_prefix,"_dotplot.pdf")))}
+if(kegg){
+ek<- enrichKEGG(gene= gene,
+             organism     = 'hsa',
+              pvalueCutoff = 0.95,
+	qvalueCutoff = 0.95)
+ek<-setReadable(ek,OrgDb = org.Hs.eg.db, keyType="ENTREZID")
+write.csv(ek,file=file.path(output_path,paste0(output_prefix,"_kegg.csv")),row.names = F,quote=F)
+if(dot_plot){
+print(dotplot(ek,title="enrich:KEGG"))
+}
+}
+
+if(bp){
+ego_BP<- enrichGO(gene= gene,
+            ont="BP",
+	keyType = "ENTREZID",
+             OrgDb        = org.Hs.eg.db,
+              pvalueCutoff = 0.95,
+	qvalueCutoff = 0.95)
+ego_BP<-setReadable(ego_BP,OrgDb = org.Hs.eg.db, keyType="ENTREZID")
+write.csv(ego_BP,file=file.path(output_path,paste0(output_prefix,"_gobp.csv")),row.names = F,quote=F)
+if(dot_plot){
+print(dotplot(ego_BP,title="enrich:GO_BP"))
+}
+}
+
+if(cc){
+ego_CC<- enrichGO(gene= gene,
+            ont="CC",
+	keyType = "ENTREZID",
+             OrgDb        = org.Hs.eg.db,
+              pvalueCutoff = 0.95,
+	qvalueCutoff = 0.95)
+ego_CC<-setReadable(ego_CC,OrgDb = org.Hs.eg.db, keyType="ENTREZID")
+write.csv(ego_CC,file=file.path(output_path,paste0(output_prefix,"_gocc.csv")),row.names = F,quote=F)
+if(dot_plot){
+print(dotplot(ego_CC,title="enrich:GO_CC"))
+}
+}
+
+if(mf){
+ego_MF<- enrichGO(gene= gene,
+            ont="MF",
+	keyType = "ENTREZID",
+             OrgDb        = org.Hs.eg.db,
+              pvalueCutoff = 0.95,
+	qvalueCutoff = 0.95)
+ego_MF<-setReadable(ego_MF,OrgDb = org.Hs.eg.db, keyType="ENTREZID")
+write.csv(ego_MF,file=file.path(output_path,paste0(output_prefix,"_gomf.csv")),row.names = F,quote=F)
+if(dot_plot){
+print(dotplot(ego_MF,title="enrich:GO_MF"))
+}
+}
+if(dot_plot){dev.off()}
+}
