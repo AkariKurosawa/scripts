@@ -44,6 +44,6 @@ if [ ! -d ${output_dir} ];then mkdir -p ${output_dir};fi
 if [ ${single} -eq 1 ];then
 for path in `ls ${fastq_dir}/*.fastq*` ;do file=${path##*/};${string1} -o ./${output_dir}/${file%.fastq*}/ -t ${threads} ./${path} ;done
 else
-for path in `ls ${fastq_dir}/*_1.fastq*` ;do file=${path##*/};${string1} -o ./${output_dir}/${file%.fastq*}/ -t ${threads} ./${path}" "${path/_1.fastq/_2.fastq};done
+for path in `ls ${fastq_dir}/*_1.fastq*` ;do file=${path##*/};${string1} -o ./${output_dir}/${file%.fastq*}/ -t ${threads} ./${path} ${path/_1.fastq/_2.fastq};done
 fi
  
