@@ -15,7 +15,7 @@ reads=
 start_time=$(date +%s)
 
 bash ~/resource/scripts/fq_dump.sh -n ${reads} -i ${ids_file} -o ${raw_dir}
-bash ~/resource/scripts/trim_galore.sh -i ${raw_dir} -o ${trim_galore_dir} 
+bash ~/resource/scripts/trim_galore.sh -i ${raw_dir} -o ${trim_galore_dir} -g
 bash ~/resource/scripts/fastqc.sh -i ${trim_galore_dir} -o ${fastqc_dir}
 bash ~/resource/scripts/hisat2_stringtie.sh -t 8 --single -o ${ht2_dir} -i ${ht2_index} -g ${gtf} -f ${trim_galore_dir}
 
