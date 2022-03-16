@@ -21,3 +21,9 @@ usage: bash runinfo_runids.sh <PRJNA number>
 #220307
 ##1.create clusterProfiler.r
 finish test, upload to github
+
+#220316
+##1.fix bug in pipelines
+- add -g in trim-galore command in all paired and single pipelines
+- add -p in trim-galore command in paired pipelines
+- fix kallisto command(no -l and -s in paired mode) 
