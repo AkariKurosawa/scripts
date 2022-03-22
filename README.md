@@ -26,4 +26,9 @@ finish test, upload to github
 ##1.fix bug in pipelines
 - add -g in trim-galore command in all paired and single pipelines
 - add -p in trim-galore command in paired pipelines
-- fix kallisto command(no -l and -s in paired mode) 
+- fix kallisto command(no -l and -s in paired mode)
+
+#220322
+##1.create gdc_id_table.r
+convert gdc json meta data to uuid/filename/barcode table.
+usage:  gdc_id_table.r <input_filename> <output_filename>
