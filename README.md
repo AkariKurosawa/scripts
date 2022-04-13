@@ -28,9 +28,15 @@ finish test, upload to github
 - add -p in trim-galore command in paired pipelines
 - fix kallisto command(no -l and -s in paired mode) 
 
+#220322
+##1.create gdc_id_table.r
+convert gdc json meta data to uuid/filename/barcode table.
+usage:  gdc_id_table.r <input_filename> <output_filename>
+
 #220413
 ##1.add gzip parameter in fq_dump.sh
 add --gzip
 
 ##2.create fasterq_dump.sh and corresponding pipeline files
+usage: fastqer_dump.sh -e <threads> -i <input_names> -o <output_path> -n <reads_number>
 

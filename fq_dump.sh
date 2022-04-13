@@ -25,9 +25,14 @@ done
 
 if [ ! -d ${output_dir} ];then mkdir -p ${output_dir};fi
 
-string1="fastq-dump -O ${output_dir}"
+string1="fastq-dump --gzip -O ${output_dir}"
 if [ ${reads_number} -gt 0 ];then string1="${string1} -X ${reads_number}";fi 
 string1="${string1}  --split-files"
 
-for id in `cat ${input_ids}`;do ${string1} ${id};rm ~/SRR/sra/${id}.sra.cache ;done
+for id in `cat ${input_ids}`;do 
+{
+${string1} ${id}
+#rm ~/SRR/sra/${id}.sra.cache 
+}
+done
 
