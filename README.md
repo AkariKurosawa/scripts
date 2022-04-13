@@ -27,3 +27,10 @@ finish test, upload to github
 - add -g in trim-galore command in all paired and single pipelines
 - add -p in trim-galore command in paired pipelines
 - fix kallisto command(no -l and -s in paired mode) 
+
+#220413
+##1.add gzip parameter in fq_dump.sh
+add --gzip
+
+##2.create fasterq_dump.sh and corresponding pipeline files
+
