@@ -40,3 +40,6 @@ add --gzip
 ##2.create fasterq_dump.sh and corresponding pipeline files
 usage: fastqer_dump.sh -e <threads> -i <input_names> -o <output_path> -n <reads_number>
 
+#220606
+##1.create fasterq_dump-trim_galore_fastqc pipeline file
+
