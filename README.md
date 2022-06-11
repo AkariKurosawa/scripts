@@ -43,3 +43,7 @@ usage: fastqer_dump.sh -e <threads> -i <input_names> -o <output_path> -n <reads_
 #220606
 ##1.create fasterq_dump-trim_galore_fastqc pipeline file
 
+#220611
+##1.add gzip option in fasterq_dump.sh
+-g|--gzip
+

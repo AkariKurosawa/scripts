@@ -14,7 +14,7 @@ kls_threads=8
 
 start_time=$(date +%s)
 
-bash ~/resource/scripts/fasterq_dump.sh -e ${fasterq_dump_threads} -i ${ids_file} -o ${raw_dir}
+bash ~/resource/scripts/fasterq_dump.sh -e ${fasterq_dump_threads} -i ${ids_file} -o ${raw_dir} -g
 bash ~/resource/scripts/trim_galore.sh -i ${raw_dir} -o ${trim_galore_dir} -g -p
 bash ~/resource/scripts/fastqc.sh -i ${trim_galore_dir} -o ${fastqc_dir}
 bash ~/resource/scripts/kallisto_quant.sh -t ${kls_threads} -b 100 -o ${kls_dir} -i ${kls_index} -f ${trim_galore_dir}

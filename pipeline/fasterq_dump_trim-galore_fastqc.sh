@@ -12,7 +12,7 @@ fastqc_dir=
 
 start_time=$(date +%s)
 
-bash ~/resource/scripts/fasterq_dump.sh -e ${fasterq_dump_threads} -i ${ids_file} -o ${raw_dir}
+bash ~/resource/scripts/fasterq_dump.sh -e ${fasterq_dump_threads} -i ${ids_file} -o ${raw_dir} -g
 bash ~/resource/scripts/trim_galore.sh -i ${raw_dir} -o ${trim_galore_dir} -g -p
 bash ~/resource/scripts/fastqc.sh -i ${trim_galore_dir} -o ${fastqc_dir}
  
