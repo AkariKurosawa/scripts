@@ -39,5 +39,5 @@ ${string1} ${id}
 }
 done
 
-if [ ${gzip} eq 1 ];gzip ${output_dir}/*;fi
+if [ ${gzip} eq 1 ];then gzip ${output_dir}/* ;fi
 
